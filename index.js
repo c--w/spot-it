@@ -19,12 +19,15 @@ app.use(
 );
 app.use(cookieParser());
 app.use(bodyParser.json());
-app.set("views", "./src/views");
+app.set("views", "./views");
 
 app.get("/", function (req, res) {
   console.log(user_info(req), "main");
   res.render("main", { layout: false });
 });
+
+server.listen(PORT);
+console.log("Started");
 
 function getUser(uid) {
   if (!sessions[uid]) {
