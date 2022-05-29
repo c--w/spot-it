@@ -37,6 +37,8 @@ app.post("/setmatch", function (req, res) {
   let match = {};
   matches[matchid] = match;
   let nickname = req.body.nickname;
+  match.num_objects = Number(req.body.num_objects);
+  match.max_objects = Number(req.body.max_objects);
   match.turn = 1;
   match.started = 0;
   match.finished = 0;
@@ -228,28 +230,31 @@ function checkMatchTime(match) {
 }
 
 function storeMatchUserResult(matchid, uid, object_num) {
+  var ret = 0;
   let match = matches[matchid];
   let matchuser = match.users[uid];
   if (!matchuser) {
     console.log("No user for id:", uid, " all uids:", Object.keys(match.users));
-    return;
+    return 0;
   }
   let ind = match.multiple_objects.indexOf(object_num);
   if (ind !== -1) {
+    ret = 1;
     matchuser.solved[ind] = 1;
     matchuser.solved_num = matchuser.solved.reduce((p, a) => p + a, 0);
-  }
-  if (matchuser.solved_num == match.num_objects) {
-    if (!matchuser.turn_solved) {
-      matchuser.points +=
-        (pointsMap[match.users_solved[match.turn - 1].length] || 1) *
-        match.num_objects;
-      matchuser.turns_played++;
+    if (matchuser.solved_num == match.num_objects) {
+      if (!matchuser.turn_solved) {
+        matchuser.points +=
+          (pointsMap[match.users_solved[match.turn - 1].length] || 1) *
+          match.num_objects;
+        matchuser.turns_played++;
+      }
+      matchuser.turn_solved = true;
+      match.users_solved[match.turn - 1].push(matchuser);
+      console.log("Turn solved by: ", matchuser.nickname);
     }
-    matchuser.turn_solved = true;
-    match.users_solved[match.turn - 1].push(matchuser);
-    console.log("Turn solved by: ", matchuser.nickname);
   }
+  return ret;
 }
 
 app.get("/match-status", function (req, res) {
@@ -262,6 +267,56 @@ app.get("/match-status", function (req, res) {
   if (match.users[req.cookies.uid])
     match.users[req.cookies.uid].last_check = Date.now();
   sendResponse(match, res);
+});
+
+app.get("/match", function (req, res) {
+  let matchid = req.query.id;
+  let match = matches[matchid];
+  if (!match) {
+    console.log("No match for: ", matchid);
+    res.render("main", {
+      layout: false,
+      matchid: "ERROR: no match for id: " + matchid
+    });
+    return;
+  }
+  res.render("main", {
+    layout: false,
+    matchid: matchid,
+    num_objects: match.num_objects,
+    max_objects: match.max_objects,
+    turn: match.turn,
+    turns: match.turns,
+    limit: match.limit
+  });
+  console.log("Match link opened: ", matchid);
+});
+
+app.post("/spotted", function (req, res) {
+  let object_num = req.body.object_num;
+  let matchid = req.body.matchid;
+  let uid = req.cookies.uid;
+  let match = {};
+  if (matchid) {
+    match = matches[matchid];
+    if (!match) {
+      sendResponse({ error: "No match for id: " + matchid }, res);
+      return;
+    }
+  }
+  let valid = -1;
+  if (matchid && !match.finished) {
+    valid = storeMatchUserResult(matchid, uid, object_num);
+  }
+  sendResponse({ result: valid }, res);
+});
+
+app.get("/sessions/:m", function (req, res) {
+  let m = Number(req.params.m);
+  let active = Object.values(sessions).filter(
+    (s) => Date.now() - s.time < m * 60 * 1000
+  );
+  sendResponse(active, res);
 });
 
 function getUser(uid) {
