@@ -6,7 +6,7 @@ const http = require("http");
 var server = http.createServer(app);
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
 var sessions = {};
 var matches = {};
 
@@ -28,7 +28,7 @@ app.get("/", function (req, res) {
 });
 
 server.listen(PORT);
-console.log("Started!");
+console.log("Started!", PORT);
 
 app.post("/setmatch", function (req, res) {
   let user = getUser(req.cookies.uid);
