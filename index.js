@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const PORT = process.env.PORT;
 var sessions = {};
+var matches = {};
 
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
@@ -27,7 +28,241 @@ app.get("/", function (req, res) {
 });
 
 server.listen(PORT);
-console.log("Started");
+console.log("Started! ");
+
+app.post("/setmatch", function (req, res) {
+  let user = getUser(req.cookies.uid);
+  let matchid = req.body.matchid;
+  console.log("setmatch", matchid);
+  let match = {};
+  matches[matchid] = match;
+  let nickname = req.body.nickname;
+  match.turn = 1;
+  match.started = 0;
+  match.finished = 0;
+  match.elapsed = 0;
+  match.users = {};
+  addUser2Match(match, user, nickname);
+  match.users_solved = new Array(match.turns);
+  console.log(
+    user_info(req),
+    "setmatch",
+    match.turns,
+    match.limit,
+    match.private
+  );
+  sendResponse("Turnir je kreiran!", res);
+});
+
+function checkOwner(match) {
+  let owner = Object.values(match.users).find(
+    (user) => user.owner && user.present && user.joined
+  );
+  if (owner) return true;
+  let present_user = Object.values(match.users).find(
+    (user) => user.present && user.joined
+  );
+  if (present_user) {
+    present_user.owner = true;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function addUser2Match(match, user, nickname) {
+  let matchuser = match.users[user.uid];
+  if (!matchuser) {
+    matchuser = {};
+    matchuser.uid = user.uid;
+    match.users[user.uid] = matchuser;
+    matchuser.points = 0;
+    matchuser.turns_played = 0;
+  }
+  matchuser.solved = new Array(match.num_objects);
+  matchuser.solved.fill(0);
+  matchuser.solved_num = 0;
+  matchuser.nickname = nickname;
+  matchuser.present = true;
+  matchuser.joined = true;
+  matchuser.last_check = Date.now();
+  checkOwner(match);
+  console.log("addUser2Match", nickname);
+  return matchuser;
+}
+
+app.post("/joinmatch", function (req, res) {
+  let user = getUser(req.cookies.uid);
+  let matchid = req.body.matchid;
+  let nickname = req.body.nickname;
+  console.log("Joined:", nickname);
+  let match = matches[matchid];
+  if (!match) {
+    sendResponse({ error: "No match for id: " + matchid }, res);
+    return;
+  }
+  let matchuser = addUser2Match(match, user, nickname);
+  let resp_text = "Joined!";
+  if (match.started)
+    resp_text += "<br>Match already in progress, start playing!";
+  else if (!matchuser.owner)
+    resp_text += "<br>Wait for owner to start the match!";
+  sendResponse(resp_text, res);
+});
+
+app.post("/leavematch", function (req, res) {
+  let user = getUser(req.cookies.uid);
+  console.log("Left:", user.nickname);
+  let matchid = req.body.matchid;
+  let match = matches[matchid];
+  if (!match) {
+    sendResponse({ error: "No match for id: " + matchid }, res);
+    return;
+  }
+  let matchuser = match.users[user.uid];
+  if (matchuser) {
+    matchuser.joined = false;
+    matchuser.owner = false;
+    console.log("leavematch", matchuser.nickname);
+  }
+  checkOwner(match);
+  sendResponse("Match left.", res);
+});
+
+app.post("/startmatch", function (req, res) {
+  let matchid = req.body.matchid;
+  console.log("startmatch", matchid);
+  let match = matches[matchid];
+  if (!match) {
+    sendResponse({ error: "No match for id: " + matchid }, res);
+    return;
+  }
+  match.start_time = Date.now();
+  match.turn = 1;
+  match.started = 1;
+  match.finished = 0;
+  Object.values(match.users).forEach((user) => {
+    user.last_result = null;
+    user.points = 0;
+    user.turns_played = 0;
+    if (!user.present) {
+      delete match.users[user.uid];
+    }
+  });
+  initTurn(match);
+  setTimeout(checkMatchTime, 100, match);
+  sendResponse("Turnir je pokrenut!", res);
+});
+
+function initTurn(match) {
+  console.log("Init turn:", match.turn);
+  match.start_time = Date.now();
+  match.users_solved[match.turn - 1] = [];
+  match.multiple_objects = [];
+  Object.values(match.users).forEach((user) => {
+    user.solved = new Array(match.num_objects);
+    user.solved.fill(0);
+    user.solved_num = 0;
+    user.turn_solved = false;
+  });
+  while (match.multiple_objects.length < match.num_objects) {
+    let ind = Math.floor(Math.random() * match.max_objects);
+    if (match.multiple_objects.indexOf(ind) === -1)
+      match.multiple_objects.push(ind);
+  }
+}
+
+function allPresentSolved(match) {
+  return !Object.values(match.users).find(
+    (user) => user.joined && user.present && !user.turn_solved
+  );
+}
+
+const pointsMap = [10, 8, 6, 4, 2, 1];
+
+function checkMatchTime(match) {
+  Object.values(match.users).forEach((user) => {
+    if (Date.now() - user.last_check > 15000) {
+      user.present = false;
+      user.owner = false;
+    } else {
+      user.present = true;
+    }
+  });
+  if (!checkOwner(match)) {
+    console.log("No active player");
+    match.started = 0;
+    match.finished = 1;
+    match.finished_message = "All players left the match.";
+    return;
+  }
+  match.elapsed = Date.now() - match.start_time;
+  if (match.elapsed / (1000 * 60) < match.limit && !allPresentSolved(match)) {
+    setTimeout(checkMatchTime, 100, match);
+    return;
+  }
+
+  let users_solved_some = Object.values(match.users).filter(
+    (user) => user.solved_num > 0 && !user.turn_solved
+  );
+  users_solved_some.sort((a, b) => b.solved_num - a.solved_num);
+  let i = match.users_solved[match.turn - 1].length - 1;
+  let last_solved_num = 0;
+  users_solved_some.forEach((user) => {
+    if (user.solved_num != last_solved_num) i++;
+    last_solved_num = user.solved_num;
+    let points = Math.floor(((pointsMap[i] || 1) * match.num_words) / 2);
+    user.points += points;
+  });
+  if (match.turn >= match.turns) {
+    console.log("Match finished");
+    match.started = 0;
+    match.finished = 1;
+    match.finished_message = "Turnir je završen!";
+    return;
+  } else {
+    match.turn++;
+    initTurn(match);
+    setTimeout(checkMatchTime, 100, match);
+  }
+}
+
+function storeMatchUserResult(matchid, uid, object_num) {
+  let match = matches[matchid];
+  let matchuser = match.users[uid];
+  if (!matchuser) {
+    console.log("No user for id:", uid, " all uids:", Object.keys(match.users));
+    return;
+  }
+  let ind = match.multiple_objects.indexOf(object_num);
+  if (ind !== -1) {
+    matchuser.solved[ind] = 1;
+    matchuser.solved_num = matchuser.solved.reduce((p, a) => p + a, 0);
+  }
+  if (matchuser.solved_num == match.num_objects) {
+    if (!matchuser.turn_solved) {
+      matchuser.points +=
+        (pointsMap[match.users_solved[match.turn - 1].length] || 1) *
+        match.num_objects;
+      matchuser.turns_played++;
+    }
+    matchuser.turn_solved = true;
+    match.users_solved[match.turn - 1].push(matchuser);
+    console.log("Turn solved by: ", matchuser.nickname);
+  }
+}
+
+app.get("/match-status", function (req, res) {
+  let matchid = req.query.matchid;
+  let match = matches[matchid];
+  if (!match) {
+    sendResponse({ error: "No match for id: " + matchid }, res);
+    return;
+  }
+  if (match.users[req.cookies.uid])
+    match.users[req.cookies.uid].last_check = Date.now();
+  sendResponse(match, res);
+});
 
 function getUser(uid) {
   if (!sessions[uid]) {
@@ -75,6 +310,14 @@ function user_info(req) {
     );
     return ip + " " + uid.substring(0, 3) + " ::";
   }
+}
+
+function sendResponse(obj, res) {
+  res.writeHead(200, {
+    "Content-Type": "application/json"
+  });
+  res.write(JSON.stringify(obj));
+  res.end();
 }
 
 function log(msg, param1, param2, param3, param4, param5, param6) {
