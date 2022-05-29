@@ -3,8 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Spot the object</title>
   <link rel="manifest" href="/site.webmanifest">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -17,5 +16,50 @@
 </head>
 
 <body>
-  Hello
+  <div class="input-group menu">
+    <button id="help" class="btn btn-outline-secondary" onclick="help()"><i class="bi bi-question-circle"></i></button>
+    <select id="num-objects" name="num-objects" class="form-select gameparam">
+      <option value="1">Spot 1 object</option>
+      <option value="3">Spot 3 objects</option>
+      <option value="5">Spot 5 objects</option>
+      <option value="10">Spot 10 objects</option>
+    </select>
+    <select id="max-objects" name="max-objects" class="form-select gameparam">
+      <option value="100">In 100</option>
+      <option value="200">In 200</option>
+      <option value="500">In 500</option>
+      <option value="1000">In 1000</option>
+    </select>
+    <button id="start" class="btn btn-outline-secondary" onclick="startMatch()"><i class="bi bi-flag"></i></button>
+    <button id="match" class="btn btn-outline-secondary" onclick="shareLink()"><i
+        class="bi bi-people-fill"></i></button>
+    <button id="leave-match-button" class="btn btn-outline-secondary" onclick="leaveMatch()"
+      style="display: none; flex-grow: 1">
+      <i class="bi bi-x-square"></i> Leave match</button>
+  </div>
+  <div class="input-group menu">
+    <select id="turns" name="turns" class="form-select gameparam">
+      <option value="3">3 rounds</option>
+      <option value="5">5 rounds</option>
+      <option value="7">7 rounds</option>
+      <option value="10">10 rounds</option>
+      <option value="20">20 rounds</option>
+      <option value="99">99 rounds</option>
+    </select>
+    <select id="limit" name="limit" class="form-select gameparam">
+      <option value="1">1 min</option>
+      <option value="2">2 min</option>
+      <option value="3">3 min</option>
+      <option value="5">5 min</option>
+    </select>
+    <select id="level" name="level" class="form-select gameparam">
+      <option value="1">Lvl 1</option>
+      <option value="2">Lvl 2</option>
+      <option value="3">Lvl 3</option>
+    </select>
+  </div>
+
+  <div class="game" data-turn="{{turn}}" data-turns="{{turns}}" data-limit="{{limit}}" data-matchid="{{matchid}}"
+    data-num-objects="{{num_objects}}" data-level="{{level}}" data-max-objects="{{max_objects}}">
+  </div>
 </body>

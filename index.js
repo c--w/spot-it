@@ -28,7 +28,7 @@ app.get("/", function (req, res) {
 });
 
 server.listen(PORT);
-console.log("Started! ");
+console.log("Started!");
 
 app.post("/setmatch", function (req, res) {
   let user = getUser(req.cookies.uid);
