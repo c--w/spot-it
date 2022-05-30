@@ -170,8 +170,9 @@ function initTurn(match) {
   });
   while (match.multiple_objects.length < match.num_objects) {
     let ind = Math.floor(Math.random() * match.max_objects);
-    if (match.multiple_objects.indexOf(ind) === -1)
+    if (!match.multiple_objects.includes(ind)) {
       match.multiple_objects.push(ind);
+	}
   }
 }
 

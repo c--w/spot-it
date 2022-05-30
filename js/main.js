@@ -97,8 +97,13 @@ function initPlayField() {
         img.attr('src', '/icons/ico' + ind + '.png');
         img.attr('pos', pos);
 		$("#to-spot-div").append(img);
-		rnd_pos.push(Math.floor(rand(0, max_objects)));
+		var rnd;
+		do {
+			rnd = Math.floor(rand(0, max_objects));
+		} while(rnd_pos.includes(rnd))
+		rnd_pos.push(rnd);
     });
+	console.log(rnd_pos);
     let top_gap = $('.menu').height() + $("#to-spot-div").outerHeight();
     let bottom_gap = $('#game-info').height();
     $('.game').empty();
@@ -128,6 +133,7 @@ function initPlayField() {
                 ind = Math.floor(num_icons / max_objects * g_match.multiple_objects[placed]);
                 img.addClass('clikable');
                 img.data('pos', g_match.multiple_objects[placed]);
+				console.log(pos, placed, g_match.multiple_objects[placed]);
 				placed++;
             } else {
                 ind = Math.floor(rand(0, num_icons));
@@ -142,6 +148,7 @@ function initPlayField() {
             pos++;
         }
     }
+	console.log(pos);
     $('.game img.clikable').on("click", spotted);
 }
 
