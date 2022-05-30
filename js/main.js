@@ -21,7 +21,7 @@ var match_owner;
 var match_joined;
 var limit;
 var nickname = getCookie("nickname") || "Player1";
-var num_icons = 944;
+var total_objects = 1306;
 
 function init() {
     let id = $(".game").attr("data-matchid");
@@ -93,8 +93,7 @@ function initPlayField() {
 	let rnd_pos = [];
     g_match.multiple_objects.forEach((pos) => {
         let img = $('<img class="to-spot">');
-        let ind = Math.floor(num_icons / max_objects * pos);
-        img.attr('src', '/icons/ico' + ind + '.png');
+        img.attr('src', '/icons/ico' + pos + '.png');
         img.attr('pos', pos);
 		$("#to-spot-div").append(img);
 		var rnd;
@@ -105,9 +104,12 @@ function initPlayField() {
     });
 	console.log(rnd_pos);
     let top_gap = $('.menu').height() + $("#to-spot-div").outerHeight();
+	top_gap *= 1.25;
     let bottom_gap = $('#game-info').height();
+	bottom_gap *= 1.5;
     $('.game').empty();
-    let w = window.innerWidth;
+	let side_gap =  window.innerWidth/30;
+    let w = window.innerWidth - 2* side_gap;
     let h = window.innerHeight - top_gap - bottom_gap;
     let k = w / h;
     let rows = Math.sqrt(max_objects / k);
@@ -121,8 +123,9 @@ function initPlayField() {
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
             let transform = "translatex(-50%) translatey(-50%) ";
-            let posx = j * ow + ow / 2 + rand(-ow / 4, ow / 4);
-            let posy = top_gap + i * oh + oh / 2 + rand(-oh / 4, oh / 4);
+			var shift = 8 - level*1.6;
+            let posx = side_gap + j * ow + ow / 2 + rand(-ow / shift, ow / shift);
+            let posy = top_gap + i * oh + oh / 2 + rand(-oh / shift, oh / shift);
             let img = $('<img class="object">');
             img.css('top', posy + "px");
             img.css('left', posx + "px");
@@ -130,21 +133,24 @@ function initPlayField() {
             img.css('width', ow + "px");
             let ind;
             if (rnd_pos.includes(pos)) {
-                ind = Math.floor(num_icons / max_objects * g_match.multiple_objects[placed]);
+                ind = g_match.multiple_objects[placed];
                 img.addClass('clikable');
                 img.data('pos', g_match.multiple_objects[placed]);
-				console.log(pos, placed, g_match.multiple_objects[placed]);
 				placed++;
             } else {
-                ind = Math.floor(rand(0, num_icons));
+                ind = Math.floor(rand(0, total_objects));
             }
             img.attr('src', '/icons/ico' + ind + '.png');
-            let scale = rand(0.5, 0.75);
+			let scale_amount = level * 0.1;	
+            let scale = rand(0.6 - scale_amount, 0.6 + scale_amount);
             transform += "scale(" + scale + ") ";
-            let rotate = rand(-45, 45);
+			let rotate_amount = (level * 60)
+            let rotate = rand(-rotate_amount, rotate_amount);
             transform += "rotate(" + rotate + "deg) ";
             img.css('transform', transform);
             $('.game').append(img);
+			let hue_rotate = rand(-(level-1) * 60, 0, (level-1) * 60);
+			img.css('filter', "hue-rotate("+hue_rotate+"deg)");
             pos++;
         }
     }
@@ -408,6 +414,10 @@ function copyMatchLinkClipboard(id) {
     } else {
         updateStatus("Link is copied", 2000);
     }
+}
+
+function help(e) {
+  $(".help0").show();
 }
 
 $(window).on("load", () => {

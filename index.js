@@ -9,6 +9,7 @@ const cookieParser = require("cookie-parser");
 const PORT = process.env.PORT || 8080;
 var sessions = {};
 var matches = {};
+var total_objects = 1306;
 
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
@@ -169,7 +170,7 @@ function initTurn(match) {
     user.turn_solved = false;
   });
   while (match.multiple_objects.length < match.num_objects) {
-    let ind = Math.floor(Math.random() * match.max_objects);
+    let ind = Math.floor(Math.random() * total_objects);
     if (!match.multiple_objects.includes(ind)) {
       match.multiple_objects.push(ind);
 	}
