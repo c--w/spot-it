@@ -214,7 +214,7 @@ function checkMatchTime(match) {
   users_solved_some.forEach((user) => {
     if (user.solved_num != last_solved_num) i++;
     last_solved_num = user.solved_num;
-    let points = Math.floor(((pointsMap[i] || 1) * match.num_words) / 2);
+    let points = Math.floor(((pointsMap[i] || 1) * match.num_objects) / 2);
     user.points += points;
   });
   if (match.turn >= match.turns) {
