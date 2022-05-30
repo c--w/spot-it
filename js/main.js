@@ -90,12 +90,14 @@ function rand(low, high) {
 }
 function initPlayField() {
 	$("#to-spot-div").empty();
+	let rnd_pos = [];
     g_match.multiple_objects.forEach((pos) => {
         let img = $('<img class="to-spot">');
         let ind = Math.floor(num_icons / max_objects * pos);
-        img.attr('src', '/icons/icon' + ind + '.png');
+        img.attr('src', '/icons/ico' + ind + '.png');
         img.attr('pos', pos);
 		$("#to-spot-div").append(img);
+		rnd_pos.push(Math.floor(rand(0, max_objects)));
     });
     let top_gap = $('.menu').height() + $("#to-spot-div").outerHeight();
     let bottom_gap = $('#game-info').height();
@@ -105,11 +107,12 @@ function initPlayField() {
     let k = w / h;
     let rows = Math.sqrt(max_objects / k);
     let cols = rows * k;
-    rows = Math.round(rows);
-    cols = Math.round(cols);
+    rows = Math.ceil(rows);
+    cols = Math.ceil(cols);
     let ow = w / cols;
     let oh = h / rows;
     let pos = 0;
+	let placed = 0;
     for (let i = 0; i < rows; i++) {
         for (let j = 0; j < cols; j++) {
             let transform = "translatex(-50%) translatey(-50%) ";
@@ -121,14 +124,15 @@ function initPlayField() {
             img.css('height', oh + "px");
             img.css('width', ow + "px");
             let ind;
-            if (g_match.multiple_objects.includes(pos)) {
-                ind = Math.floor(num_icons / max_objects * pos);
+            if (rnd_pos.includes(pos)) {
+                ind = Math.floor(num_icons / max_objects * g_match.multiple_objects[placed]);
                 img.addClass('clikable');
-                img.data('pos', pos);
+                img.data('pos', g_match.multiple_objects[placed]);
+				placed++;
             } else {
                 ind = Math.floor(rand(0, num_icons));
             }
-            img.attr('src', '/icons/icon' + ind + '.png');
+            img.attr('src', '/icons/ico' + ind + '.png');
             let scale = rand(0.5, 0.75);
             transform += "scale(" + scale + ") ";
             let rotate = rand(-45, 45);
