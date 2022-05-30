@@ -39,6 +39,8 @@ app.post("/setmatch", function (req, res) {
   let nickname = req.body.nickname;
   match.num_objects = Number(req.body.num_objects);
   match.max_objects = Number(req.body.max_objects);
+  match.turns = Number(req.body.turns);
+  match.limit = Number(req.body.limit);
   match.turn = 1;
   match.started = 0;
   match.finished = 0;
@@ -51,7 +53,6 @@ app.post("/setmatch", function (req, res) {
     "setmatch",
     match.turns,
     match.limit,
-    match.private
   );
   sendResponse("Turnir je kreiran!", res);
 });
@@ -203,7 +204,7 @@ function checkMatchTime(match) {
     setTimeout(checkMatchTime, 100, match);
     return;
   }
-
+  console.log(match.elapsed, match.limit); 	
   let users_solved_some = Object.values(match.users).filter(
     (user) => user.solved_num > 0 && !user.turn_solved
   );
@@ -238,6 +239,7 @@ function storeMatchUserResult(matchid, uid, object_num) {
     return 0;
   }
   let ind = match.multiple_objects.indexOf(object_num);
+  console.log(match.multiple_objects, object_num, ind);
   if (ind !== -1) {
     ret = 1;
     matchuser.solved[ind] = 1;
@@ -293,8 +295,9 @@ app.get("/match", function (req, res) {
 });
 
 app.post("/spotted", function (req, res) {
-  let object_num = req.body.object_num;
+  let object_num = Number(req.body.object_num);
   let matchid = req.body.matchid;
+  console.log("spotted", matchid, object_num);
   let uid = req.cookies.uid;
   let match = {};
   if (matchid) {
@@ -322,7 +325,7 @@ app.get("/sessions/:m", function (req, res) {
 function getUser(uid) {
   if (!sessions[uid]) {
     console.log("New user: ", uid);
-    sessions[uid] = { nickname: "Player" };
+    sessions[uid] = { nickname: "Player1" };
     sessions[uid].uid = uid;
     console.log("Sessions", Object.keys(sessions).length);
   }
